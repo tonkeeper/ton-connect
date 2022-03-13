@@ -2,7 +2,7 @@
 
 * [Overview](#overview)
 * [Definitions](#definitions)
-* [Protocol](#protocol)
+* [Web protocol](#web-protocol)
 
 ## Overview
 
