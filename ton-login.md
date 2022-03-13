@@ -67,7 +67,7 @@ RootLoginKey = HMAC-SHA256(key: "TonLogin.Root", data: WalletSeed)
 
 The service is defined by two strings: `realm` and `name`. Each login key is mapped one-to-one to such pair of strings.
 
-All web-based services set `realm="web"`. Telegram channels and bots may use `realm="telegram"`, but one should note that [Client ID](#client-id) would be different when logging into the same service through the web. 
+All web-based services set `realm="web"`. Telegram channels and bots may use `realm="telegram"`, but one should note that [Client ID](#client-id) would be different when logging into the same service through the web.
 
 ```
 ServiceLoginKey = HMAC-SHA256(key: realm + ":" + name , data: RootLoginKey)
@@ -111,23 +111,175 @@ SessionNonce = crypto_box_random_nonce()
 
 Authenticator is a binary string that proves to the Service that the current session (represented by the [Session Keypair](#session-keypair)) is correctly authenticated by the [Client ID](#client-id).
 
-Authenticator contains arbitrary [session payload](#session-payload).
+Authenticator contains [Auth Payload](#auth-payload) provided to the crypto_box as a binary string.
 
 ```
-SessionAuthenticator = crypto_box(payload, nonce, SessionPk, ClientSk)
+SessionAuthenticator = crypto_box(payload, SessionNonce, SessionPk, ClientSk)
 ```
 
-### Session Payload
+Session Authenticator is verified using the [Client Public key](#client-keypair) and the nonce.
+The successful verification returns the [Auth Payload](#auth-payload) object.
+
+```
+AuthPayload = crypto_box_open(SessionAuthenticator, SessionNonce, ClientPk, SessionSk)
+```
 
 
+### Auth Request
+
+A JSON-encoded object with the following structure for each version of the login request:
+
+```
+{
+    "protocol": "ton-auth",
+    "v1": {
+       (fields)
+    }
+}
+```
+
+Fields in the v1 object:
+
+`session`: Base64-encoded [Session Public Key](#session-keypair).
+
+`action` (optional): localized string describing the action on the service. For a regular login this should be left empty.
+
+`image_url` (optional): URL of the image to display to the user.
+
+`return_url` (optional): URL that user opens on their device after successful login. This will include the [Auth Response](#auth-response) in a query string under the key `tonlogin`.
+
+`return_serverless` (optional): boolean value indicating that `tonlogin` parameter must be provided as a URL anchor (via `#`). Example: `https://example.com/...#tonlogin=`. 
+
+`callback_url` (optional): URL that user opens on their device after successful login. [Auth Response](#auth-response) will be included in a query string under the key `tonlogin`.
+
+`items` (optional): array of requested data items to be shared by the user. 
+
+Items are declared as objects with `type` and `required` fields. 
+
+Unknown fields are ignored.
+
+`required` flag is merely for user’s convenience to indicate that it does not make sense to login without providing such data, but the service should check all the received data themselves and react accordingly.
+
+Currently supported type is `ton-address`.
+
+Example:
+
+```
+{
+    "protocol": "ton-auth",
+    "v1": {
+        "session": Base64(SessionPk),
+        "action": "Confirm adding the @username to the list of admins",
+        "image_url": "https://example.com/logo.png",
+        "return_url": "https://example.com/myprofile",
+        "callback_url": "https://example.com/tonlogin",
+        "items": [
+            {
+                "type": "ton-address",
+                "required": true,
+            }
+        ],
+    }
+}
+```
 
 
+### Auth Response
+
+Response is an envelope around the authenticator object.
+
+```
+{
+    "version": "v1", // version corresponding to the request version
+    "nonce": Base64(SessionNonce),
+    "clientid": Base64(ClientID),
+    "auth": Base64(AuthPayload),
+}
+```
+
+### Auth Payload
+
+Payload inside the [authenticator](#session-authenticator) contains the shared data items and is encoded in JSON.
+Any item may be missing if the user chose not to share it or it is not supported by the client.
+
+```
+{
+    "items": [
+        {
+            "type": "ton-address",
+            "value": "EQrt...s7Ui",
+        }
+    ]
+}
+```
+
+### Response encoding in the URLs
+
+Upon user’s confirmation, `return_url` and `callback_url` have `tonlogin` query string parameter `tonlogin` added with UrlSafeBase64-encoded [Auth Response](#auth-response).
+
+Examples:
+
+```
+https://example.com/auth/?tonlogin=...
+https://example.com/auth/?foo=bar&tonlogin=...
+```
+
+Serverless example of `return_url`:
+
+```
+https://example.com/auth/#tonlogin=...
+```
 
 
-## Protocol 
+## Web protocol 
 
-**Service** generates [Session Keypair](#session-keypair) and provides a link to authenticate with a TON wallet.
+**Service** generates [Session Keypair](#session-keypair) and forms the [Auth Request](#auth-request).
 
+The request object is encoded in Base64 and could be wrapped in the link in the following flavors.
 
+(1) Link with custom schema that can be handled by any wallet app:
+
+```
+ton-login://<scheme-less-url>
+```
+
+(2) Universal link aka deeplink for the Tonkeeper (similarly for other wallets):
+
+```
+https://app.tonkeeper.com/ton-login/<scheme-less-url>
+```
+
+Examples:
+
+```
+ton-login://example.com/...
+https://app.tonkeeper.com/ton-login/example.com/...
+```
+
+Clients should use HTTPS (TLS) scheme to download the request object.
+
+(3) QR code shall encode the direct link to the downloadable request object.
+
+```
+https://example.com/...
+```
+
+**Client** downloads the [Auth Request](#auth-request), verifies TLS certificate.
+
+**Client** derives [Client Keypair](#client-keypair) `realm="web"` and `name` set to the hostname.
+
+**Client** verifies the existence of `"v1"` key in the request object and presence of either `return_url` or `callback_url` (both fields are also allowed).
+
+**Client** displays confirmation panel to the user.
+
+**Client** forms the [Auth Response](#auth-response).
+
+If the `callback_url` is present: **client** sends the callback with the `tonlogin` parameter containing.
+
+Upon successful response (HTTP 200), shows either a confirmation checkmark or a button to go back via `return_url` (also, with `tonlogin` appended).
+
+If the `callback_url` is missing, then **client** shows the button with `return_url` (with `tonlogin` appended).
+
+When **server** receives the [Auth Response](#auth-response), opens up [Auth Payload](#auth-payload) and marks [Client ID](#client-id) as logged-in.
 
 
