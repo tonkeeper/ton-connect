@@ -101,7 +101,7 @@ Public and private 32-byte keys generated using Crypto Box API in NaCl.
 
 ### Session Nonce
 
-Nonce is 24-byte string generated from random _by the client_. 
+Nonce is 24-byte string generated from random _by the client_.
 
 ```
 SessionNonce = crypto_box_random_nonce()
@@ -141,6 +141,8 @@ A JSON-encoded object with the following structure for each version of the login
 Fields in the v1 object:
 
 `session`: Base64-encoded [Session Public Key](#session-keypair).
+
+`session_payload`: Base64-encoded arbitrary session payload that **must** be returned by the client back to the server.
 
 `action` (optional): localized string describing the action on the service. For a regular login this should be left empty.
 
@@ -193,7 +195,7 @@ Response is an envelope around the authenticator object.
     "version": "v1", // version corresponding to the request version
     "nonce": Base64(SessionNonce),
     "clientid": Base64(ClientID),
-    "auth": Base64(AuthPayload),
+    "authenticator": Base64(SessionAuthenticator),
 }
 ```
 
@@ -202,8 +204,11 @@ Response is an envelope around the authenticator object.
 Payload inside the [authenticator](#session-authenticator) contains the shared data items and is encoded in JSON.
 Any item may be missing if the user chose not to share it or it is not supported by the client.
 
+Client copies value `session_payload` from the [Auth Request](#auth-request) into the response payload as-is.
+
 ```
 {
+    "session_payload": SessionPayload,
     "items": [
         {
             "type": "ton-address",
@@ -234,6 +239,8 @@ https://example.com/auth/#tonlogin=...
 ## Web protocol 
 
 **Service** generates [Session Keypair](#session-keypair) and forms the [Auth Request](#auth-request).
+
+**Service** uses `session_payload` to store encrypted [Session secret key](#session-keypair) and the expiration timestamp on the client’s side. See one possible format for this below: [Session Cookie](#session-cookie).
 
 The request object is encoded in Base64 and could be wrapped in the link in the following flavors.
 
@@ -274,6 +281,8 @@ https://example.com/...
 
 **Client** forms the [Auth Response](#auth-response).
 
+Client places [Session Payload](#session-payload) from the request into the response.
+
 If the `callback_url` is present: **client** sends the callback with the `tonlogin` parameter containing.
 
 Upon successful response (HTTP 200), shows either a confirmation checkmark or a button to go back via `return_url` (also, with `tonlogin` appended).
@@ -281,5 +290,26 @@ Upon successful response (HTTP 200), shows either a confirmation checkmark or a 
 If the `callback_url` is missing, then **client** shows the button with `return_url` (with `tonlogin` appended).
 
 When **server** receives the [Auth Response](#auth-response), opens up [Auth Payload](#auth-payload) and marks [Client ID](#client-id) as logged-in.
+
+
+
+## Session Cookie
+
+One way the server may keep track of the session liveliness is to store encrypted session secret key on the client side in-between requests via [Session Payload](#session-payload).
+
+Note: this is not part of the spec since it does not affect communication protocol between client and server. Each server may have a different strategy to handle this data.
+
+Session Payload format:
+
+* first 32 bits — little-endian encoding of the expiration timestamp (UTC, in seconds).
+* next bytes — NaCl "secretbox" that encrypts session secret key via a static pre-generated symmetric encryption key.
+
+```
+<timestamp u32le><encrypted session secret key>
+```
+
+
+
+
 
 
