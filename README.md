@@ -240,7 +240,7 @@ https://example.com/auth/#tonlogin=...
 
 **Service** generates [Session Keypair](#session-keypair) and forms the [Auth Request](#auth-request).
 
-**Service** uses `session_payload` to store encrypted [Session secret key](#session-keypair) and the expiration timestamp on the client’s side. See one possible format for this below: [Session Cookie](#session-cookie).
+**Service** uses `session_payload` to store encrypted [Session secret key](#session-keypair) and the expiration timestamp on the client’s side. See one possible format for this below: [Stateless Session Payload ](#stateless-session-payload).
 
 The request object is encoded in Base64 and could be wrapped in the link in the following flavors.
 
@@ -293,11 +293,11 @@ When **server** receives the [Auth Response](#auth-response), opens up [Auth Pay
 
 
 
-## Session Cookie
+## Stateless Session Payload 
 
 One way the server may keep track of the session liveliness is to store encrypted session secret key on the client side in-between requests via [Session Payload](#session-payload).
 
-Note: this is not part of the spec since it does not affect communication protocol between client and server. Each server may have a different strategy to handle this data.
+**Note:** this is not part of the core specification since it does not affect communication protocol between the client and the server. Each server may have a different strategy to handle this data.
 
 Session Payload format:
 
