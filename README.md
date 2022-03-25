@@ -24,6 +24,7 @@ TON Login covers the following scenarios:
 * Unique identifiers for each service to prevent cross-service tracking.
 * Explicit control over data shared with the service (wallet address, email etc.)
 * Repeated authentication for confirming operations on the service (off-chain).
+* Protocol does not permit accidental signing of blockchain transactions.
 
 ### TON wallet address
 
@@ -142,7 +143,7 @@ Fields in the v1 object:
 
 `session`: Base64-encoded [Session Public Key](#session-keypair).
 
-`session_payload`: Base64-encoded arbitrary session payload that **must** be returned by the client back to the server.
+`session_payload`: Base64-encoded arbitrary [session payload](#session-payload) that **must** be returned by the client back to the server.
 
 `action` (optional): localized string describing the action on the service. For a regular login this should be left empty.
 
@@ -171,6 +172,7 @@ Example:
     "protocol": "ton-auth",
     "v1": {
         "session": Base64(SessionPk),
+        "session_payload": "...",
         "action": "Confirm adding the @username to the list of admins",
         "image_url": "https://example.com/logo.png",
         "return_url": "https://example.com/myprofile",
@@ -190,25 +192,30 @@ Example:
 
 Response is an envelope around the authenticator object.
 
+Client copies value `session_payload` from the [Auth Request](#auth-request) into the response object as-is.
+
 ```
 {
     "version": "v1", // version corresponding to the request version
     "nonce": Base64(SessionNonce),
     "clientid": Base64(ClientID),
     "authenticator": Base64(SessionAuthenticator),
+    "session_payload": SessionPayload,
 }
 ```
+
+### Session Payload
+
+Session payload is an opaque data object that the service sends over to the client and receives back. This could be used to implement [stateless](#stateless-session-payload) storage for the [session key](#session-keypair).
+
 
 ### Auth Payload
 
 Payload inside the [authenticator](#session-authenticator) contains the shared data items and is encoded in JSON.
 Any item may be missing if the user chose not to share it or it is not supported by the client.
 
-Client copies value `session_payload` from the [Auth Request](#auth-request) into the response payload as-is.
-
 ```
 {
-    "session_payload": SessionPayload,
     "items": [
         {
             "type": "ton-address",
