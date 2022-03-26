@@ -1,4 +1,4 @@
-# TON Login
+# TON Login (⚠️ EXPERIMENTAL)
 
 This library contains necessary functionality to implement Ton Login on the client and the server.
 
