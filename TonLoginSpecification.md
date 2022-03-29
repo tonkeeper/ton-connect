@@ -155,15 +155,13 @@ Fields in the v1 object:
 
 `callback_url` (optional): URL that user opens on their device after successful login. [Auth Response](#auth-response) will be included in a query string under the key `tonlogin`.
 
-`items` (optional): array of requested data items to be shared by the user. 
+`items` (optional): array of requested [data items](#auth-request-items) to be shared by the user. 
 
 Items are declared as objects with `type` and `required` fields. 
 
 Unknown fields are ignored.
 
 `required` flag is merely for user’s convenience to indicate that it does not make sense to login without providing such data, but the service should check all the received data themselves and react accordingly.
-
-Currently supported type is `ton-address`.
 
 Example:
 
@@ -186,6 +184,85 @@ Example:
     }
 }
 ```
+
+### Auth Request Items
+
+#### ton-address
+
+Note: this item does not provide **proof of ownership** of the address. Thus, it permits using any TON address just like a "contact item", such as email or phone number.
+
+If your dapp has read-only access to blockchain, it is sufficient to ask for this type of item, since user will be explicitly authorizing transactions from that address; if the user cheated and provided someone else's address, then they won't be able to do anything on blockchain with that address.
+
+If you store some user-specific data in the DB, then make sure to use [client ID](#client-id) as a reliable identifier.
+
+Request:
+
+```
+{
+    "type": "ton-address",
+    "required": true | false,
+}
+```
+
+Response:
+
+```
+{
+    "type": "ton-address",
+    "address": "EQrt...s7Ui",
+}
+```
+
+#### ton-ownership
+
+Similar to [`ton-address`](#ton-address), but comes with a proof of ownership.
+
+This is restricted to simple individual wallets: multisig/lockup and smart contract wallets are not supported.
+
+Use this item when you actually need a proof of ownership of some on-chain data. Say, when you want to attach a picture from the user’s NFT to your centralized system.
+
+Request:
+
+```
+{
+    "type": "ton-ownership",
+    "required": true | false,
+}
+```
+
+Response:
+
+```
+{
+    "type": "ton-ownership",
+    "address": "EQrt...s7Ui",    
+    "pubkey": "Pub6...2k3y", // base64-encoded Ed25519 public key
+    "signature": "Gt562...g5s8D=", // base64-encoded ed25519 signature
+    "wallet_id": null | integer, // should be omitted in usual cases
+    "wallet_version": "v4R2", // supported values: "v3R1", "v3R2", "v4R1", "v4R2"
+}
+```
+
+To create/verify the signature, construct the following message for Ed25519 algorithm:
+
+```
+"tonlogin/ownership/" || <wallet_version> || "/" || <address>
+```
+
+where:
+
+* `wallet_version` is encoded in ASCII, verification fails for unsupported values.
+* `client_id` is a 32-byte binary [Client ID](#client-id).
+* `address` is encoded in ASCII (standard user-readable, as provided in the request params).
+
+The resulting signature is bound to user's public key, the service (via Client ID) and the concrete wallet version.
+
+Validation rules:
+
+1. Construct wallet contract using the `pubkey`, `wallet_id` and `wallet_version` (`wc` could be read from the `address`).
+2. Check that the wallet contract address is equal to `address`.
+3. Verify the `signature` using the `pubkey`.
+4. Return `address` as TON address with verified ownership.
 
 
 ### Auth Response
@@ -300,7 +377,7 @@ When **server** receives the [Auth Response](#auth-response), opens up [Auth Pay
 
 
 
-## Stateless Session Payload 
+## Stateless Session Payload
 
 One way the server may keep track of the session liveliness is to store encrypted session secret key on the client side in-between requests via [Session Payload](#session-payload).
 
@@ -315,6 +392,19 @@ Session Payload format:
 <timestamp u32le><encrypted session secret key>
 ```
 
+TODO: turn this into a json, and let server-side user to add custom fields as they like.
+
+TonLogin.createRequest(..., custom_data: {})
+
+{
+    tonlogin: { // stuff used by the library
+        timestamp: ...
+        session_secret: ...
+    }
+    userinfo: { // stuff provided by the library's user
+        user-provided-data
+    }
+}
 
 
 

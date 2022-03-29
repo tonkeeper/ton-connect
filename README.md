@@ -1,8 +1,21 @@
-# TON Login
+# TON Login (⚠️ EXPERIMENTAL)
 
 This library contains necessary functionality to implement Ton Login on the client and the server.
 
-On the server side:
+[📄 Specification](TonLoginSpecification.md)
+
+## How to run the demo
+
+```
+cd server-example
+yarn install
+yarn start
+```
+
+
+## How to use the server API
+
+TODO: this is outdated.
 
 ```js
 // Create a TonLogin object configured with a static secret.
@@ -32,5 +45,5 @@ const deeplinkURL = `https://app.tonkeeper.com/ton-login/${requestURL}`;
 
 ```
 
-On the client side:
+
 
