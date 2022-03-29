@@ -20,9 +20,16 @@ yarn add @tonapps/tonlogin-server
 TODO: this is outdated.
 
 ```js
-// Create a TonLogin object configured with a static secret.
+
 // ...
 
+// Generate static secret with and generateServerSecret 
+// and put static secret to env vars or config
+import { generateServerSecret } from '@tonapps/tonlogin-server';
+console.log(generateServerSecret());
+
+
+// Create a TonLogin object configured with a static secret.
 const tonlogin = new TonLoginServer({ staticSecret: "%fsa$tgs..." });
 
 // When we need to authenticate the user, create an authentication request:
