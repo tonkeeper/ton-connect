@@ -11,8 +11,10 @@ cd server-example
 yarn install
 yarn start
 ```
-
-
+## Install TonLoginServer
+```
+yarn add @tonapps/tonlogin-server
+```
 ## How to use the server API
 
 TODO: this is outdated.
@@ -21,17 +23,20 @@ TODO: this is outdated.
 // Create a TonLogin object configured with a static secret.
 // ...
 
-const tonlogin = new TonLoginServer({staticSecret: "%fsa$tgs..."});
+const tonlogin = new TonLoginServer({ staticSecret: "%fsa$tgs..." });
 
 // When we need to authenticate the user, create an authentication request:
 
 const request = tonlogin.generateAuthRequest({
-    ...
+    image_url: '<logo-url>',
+    return_url: '<endpoint-url>',
+    items: [{
+        type: 'ton-address', 
+        require: true
+    }],
 })
 
-// Display the request to the user:
-
-const encodedRequest = request.encode(); // url-safe base64-encoded data
+res.send(request)
 
 // Example: Tonkeeper deeplink:
 
