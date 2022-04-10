@@ -1,5 +1,6 @@
 import naclUtils from 'tweetnacl-util';
 import createHmac from 'create-hmac';
+import { TonLoginClientError } from './TonLoginClientError';
 
 export async function hmacSHA256(phrase: string, password: string) {
   const phraseBuffer = Buffer.from(phrase);
@@ -40,3 +41,16 @@ export function base64ToObj(str: string) {
   return JSON.parse(decoded);
 }
 
+export function validateObject(obj: Record<string, any>, fields: string[]) {
+  try {
+    const bodyKeys = Object.keys(obj);
+    for (let field of fields) {
+      if (!bodyKeys.includes(field)) {
+        throw `Field '${field}' does not exist in protocol`
+      }
+    }
+  } catch (err) {
+    const message = err === 'string' ? err : err.message;
+    throw new TonLoginClientError(`[ValidationSchemeError]: ${message}`);
+  }
+}

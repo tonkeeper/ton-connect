@@ -1,62 +1,66 @@
-
 import nacl from 'tweetnacl';
+import { AuthRequest, CreateResponseArgs } from './TonLoginClient.types';
+import { TonLoginClientBase } from './TonLoginClientBase';
 import * as utils from './utils';
 
-export type AuthRequest = {
-  image_url: string;
-  return_url: string;
-};
-
-export type AuthResponse = {
-  version: string;
-  nonce: string;
-  client_id: string;
-  authenticator: string;
-}
-
-type TonLoginClientOptions = {
-  walletSeed: string;
-}
-
-export class TonLoginClientV1 {
+export class TonLoginClientV1 extends TonLoginClientBase {
   public version = 'v1';
 
-  private walletSeed: string;
+  constructor(request: AuthRequest) {
+    super(request);
 
-  constructor(opts: TonLoginClientOptions) {
-    this.walletSeed = opts.walletSeed;
+    utils.validateObject(request[this.version], [
+      'session', 
+      'session_payload', 
+      'image_url', 
+      'items'
+    ]);
+
+    this.request = request;
   } 
 
-  public async encodeAuthResponse({ request, serviceName, realm, payload }: {
-    request: any;
-    realm: string;
-    serviceName: string;
-    payload: any
-  }) {
-    const data = request[this.version];
-    const sessionPk = utils.base64ToBytes(data.session);
+  public async createResponse(options: CreateResponseArgs) {
+    const request = this.getRequestBody();
+    const payload = request.items
+      .map((item) => {
+        const payload = options.extractPayload(item.type, item.required);
+        if (payload) {
+          return {
+            type: item.type,
+            ...payload
+          }
+        }
+      })
+      .filter((item) => item !== undefined);
 
-    const rootLoginKey = await utils.hmacSHA256('TonLogin.Root', this.walletSeed);
-    const serviceLoginKey = await utils.hmacSHA256(realm + ":" + serviceName, rootLoginKey.toString());
+    const sessionPk = utils.base64ToBytes(request.session);
+
+    const rootLoginKey = await utils.hmacSHA256('TonLogin.Root', options.walletSeed);
+    const serviceLoginKey = await utils.hmacSHA256(
+      `${options.realm}:${options.serviceName}`, 
+      rootLoginKey.toString()
+    );
 
     const client = nacl.box.keyPair.fromSecretKey(serviceLoginKey);
 
     const sessionNonce = nacl.randomBytes(24);
     const sessionAuthenticator = nacl.box(
-      Buffer.from(payload), 
-      sessionNonce, 
+      Buffer.from(JSON.stringify(payload)),
+      sessionNonce,
       sessionPk, 
       client.secretKey
     );
 
-    const response = {
+    const responseObj = {
       version: this.version,
       nonce: utils.bytesToBase64(sessionNonce),
       client_id: utils.bytesToBase64(client.publicKey),
       authenticator: utils.bytesToBase64(sessionAuthenticator),
-      session_payload: data.session_payload
+      session_payload: request.session_payload
     };
 
-    return utils.objToSafeBase64(response);
+    this.response = utils.objToSafeBase64(responseObj);
+
+    return this.response;
   }
 }
