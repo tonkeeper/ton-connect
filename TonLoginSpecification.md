@@ -246,16 +246,18 @@ Response:
 To create/verify the signature, construct the following message for Ed25519 algorithm:
 
 ```
-"tonlogin/ownership/" || <wallet_version> || "/" || <address>
+"tonlogin/ownership/" || <wallet_version> || "/" || <address> || "/" || <client_id>
 ```
 
 where:
 
-* `wallet_version` is encoded in ASCII, verification fails for unsupported values.
+* `wallet_version` is encoded in ASCII, verification fails for unsupported values,
+* `address` is encoded in ASCII (standard user-readable, as provided in the request params),
 * `client_id` is a 32-byte binary [Client ID](#client-id).
-* `address` is encoded in ASCII (standard user-readable, as provided in the request params).
 
-The resulting signature is bound to user's public key, the service (via Client ID) and the concrete wallet version.
+The resulting signature is bound to the user's public key, the service (via Client ID) and the concrete wallet version.
+
+**Note:** the proof is bound to the [Client ID](#client-id) and can be replayed across multiple sessions authenticating with the same client ID. This is by design, since the supported addresses do not support key rotation: if the user were able to demonstrate ownership once, they would normally be able to do it going forward.
 
 Validation rules:
 
