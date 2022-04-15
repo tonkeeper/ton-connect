@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      .wrap {
+        display: flex;
+        align-items: stretch;
+        border: 0 solid black;
+        box-sizing: border-box;
+        flex-basis: auto;
+        flex-direction: column;
+        flex-shrink: 0;
+        margin-top: 40px;
+        justify-content: center;
+        align-items: center;
+      }
+
+      #link {
+        font-size: 18px;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="text/javascript">
+      function init() {
+        const authRequestUrl = '{{requestEndpoint}}';
+        const loginLink = 'https://app.tonkeeper.com/ton-login/' + authRequestUrl;
+
+        document.getElementById('link').href = loginLink;;
+        new QRCode(document.getElementById('qrcode'), loginLink);
+      }
+    </script>
+  </head>
+  <body onload="init()">
+    <div class="wrap">
+      <div id="qrcode"></div>
+      <br />
+      <a id="link">Login by link</a>
+    </div>
+  </body>
+</html>
