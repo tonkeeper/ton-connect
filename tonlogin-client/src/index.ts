@@ -1,4 +1,4 @@
-import { AuthRequest, CreateResponseArgs } from './TonLoginClient.types';
+import { AuthRequest, CreateResponseOptions, CreateTonOwnershipSignatureOptions } from './TonLoginClient.types';
 import { TonLoginClientBase } from './TonLoginClientBase';
 import { TonLoginClientError } from './TonLoginClientError';
 import { TonLoginClientV1 } from './TonLoginClientV1';
@@ -34,7 +34,11 @@ export class TonLoginClient extends TonLoginClientBase {
     return new versions[version](scheme);
   } 
 
-  public async createResponse(options: CreateResponseArgs): Promise<string> {
+  public async createResponse(options: CreateResponseOptions): Promise<string> {
+    throw new TonLoginClientError('Not implemented');
+  }
+
+  public createTonOwnershipSignature(options: CreateTonOwnershipSignatureOptions): string {
     throw new TonLoginClientError('Not implemented');
   }
 }

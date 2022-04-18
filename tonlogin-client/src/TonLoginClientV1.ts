@@ -1,5 +1,5 @@
 import nacl from 'tweetnacl';
-import { AuthRequest, CreateResponseArgs } from './TonLoginClient.types';
+import { AuthRequest, CreateResponseOptions, CreateTonOwnershipSignatureOptions } from './TonLoginClient.types';
 import { TonLoginClientBase } from './TonLoginClientBase';
 import * as utils from './utils';
 
@@ -19,29 +19,26 @@ export class TonLoginClientV1 extends TonLoginClientBase {
     this.request = request;
   } 
 
-  public async createResponse(options: CreateResponseArgs) {
+  public createTonOwnershipSignature(options: CreateTonOwnershipSignatureOptions) {
+    const { walletId, address, clientId, secretKey } = options;
+    const signature = `tonlogin/ownership/${walletId}/${address}/${clientId}`;
+    
+    return utils.bytesToBase64(nacl.sign(Buffer.from(signature), secretKey));
+  }
+
+  public async createResponse(options: CreateResponseOptions) {
     const request = this.getRequestBody();
-    const payload = request.items
-      .map((item) => {
-        const payload = options.extractPayload(item.type, item.required);
-        if (payload) {
-          return {
-            type: item.type,
-            ...payload
-          }
-        }
-      })
-      .filter((item) => item !== undefined);
-
     const sessionPk = utils.base64ToBytes(request.session);
-
-    const rootLoginKey = await utils.hmacSHA256('TonLogin.Root', options.walletSeed);
+    const rootLoginKey = await utils.hmacSHA256('TonLogin.Root', options.seed);
     const serviceLoginKey = await utils.hmacSHA256(
-      `${options.realm}:${options.serviceName}`, 
+      `${options.realm}:${options.service}`, 
       rootLoginKey.toString()
     );
 
     const client = nacl.box.keyPair.fromSecretKey(serviceLoginKey);
+    const clientId = utils.bytesToBase64(client.publicKey);
+
+    const payload = await this.extractPayload(request.items, options.payload, { clientId });
 
     const sessionNonce = nacl.randomBytes(24);
     const sessionAuthenticator = nacl.box(
@@ -52,9 +49,9 @@ export class TonLoginClientV1 extends TonLoginClientBase {
     );
 
     const responseObj = {
+      client_id: clientId,
       version: this.version,
       nonce: utils.bytesToBase64(sessionNonce),
-      client_id: utils.bytesToBase64(client.publicKey),
       authenticator: utils.bytesToBase64(sessionAuthenticator),
       session_payload: request.session_payload
     };
