@@ -1,8 +1,10 @@
-# TON Login (⚠️ EXPERIMENTAL)
+# TON Connect
 
-This library contains necessary functionality to implement Ton Login on the client and the server.
+⚠️ THIS IS AN EXPERIMENTAL CRYPTOGRAPHIC PROTOCOL. USE AT YOUR OWN RISK.
 
-[📄 Specification](TonLoginSpecification.md)
+This library contains necessary functionality to implement TON Connect on the client and the server.
+
+[📄 Specification](TonConnectSpecification.md)
 
 ## How to run the demo
 
@@ -17,7 +19,7 @@ yarn add @tonapps/tonlogin-server
 ```
 ## How to use the server API
 
-TODO: this is outdated.
+TODO: bring this up to date.
 
 ```js
 // Generate static secret with generateServerSecret();
@@ -55,7 +57,7 @@ const decodedResponse = tonlogin.decodeAuthResponse(encodedResponse);
 console.log(decodedResponse.client_id, decodedResponse.payload);
 ```
 
-[see more](TonLoginSpecification.md#auth-payload)
+[AuthPayload specification](TonConnectSpecification.md#auth-payload)
 
 
 
