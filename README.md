@@ -4,7 +4,7 @@
 
 This library contains necessary functionality to implement TON Connect on the client and the server.
 
-[📄 Specification](TonConnectSpecification.md)
+[📄 TON Connect Specification](TonConnectSpecification.md)
 
 ## How to run the demo
 
