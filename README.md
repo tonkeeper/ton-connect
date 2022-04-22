@@ -1,6 +1,6 @@
 # TON Connect
 
-⚠️ THIS IS AN EXPERIMENTAL CRYPTOGRAPHIC PROTOCOL. USE AT YOUR OWN RISK.
+**Important:** this is an alpha version intended for review and experiments. Do not use in production until the spec is finalized.
 
 This library contains necessary functionality to implement TON Connect on the client and the server.
 
