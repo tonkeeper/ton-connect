@@ -19,8 +19,6 @@ yarn add @tonapps/tonlogin-server
 ```
 ## How to use the server API
 
-TODO: bring this up to date.
-
 ```js
 // Generate static secret with generateServerSecret();
 // and put static secret to env vars or config
