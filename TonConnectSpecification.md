@@ -385,29 +385,35 @@ One way the server may keep track of the session liveliness is to store encrypte
 
 **Note:** this is not part of the core specification since it does not affect communication protocol between the client and the server. Each server may have a different strategy to handle this data.
 
-Session Payload format:
-
-* first 32 bits — little-endian encoding of the expiration timestamp (UTC, in seconds).
-* next bytes — NaCl "secretbox" that encrypts session secret key via a static pre-generated symmetric encryption key.
+Session Payload is a binary string produced by NaCl "secretbox" that encrypts **Session Data** via a static pre-generated symmetric encryption key.
 
 ```
-<timestamp u32le><encrypted session secret key>
+SessionPayload = nonce || nacl.secretbox(SessionData, nonce, key)
 ```
 
-TODO: turn this into a json, and let server-side user to add custom fields as they like.
+**SessionData** format:
 
-TonLogin.createRequest(..., custom_data: {})
-
+```
 {
-    tonlogin: { // stuff used by the library
-        timestamp: ...
-        session_secret: ...
-    }
-    userinfo: { // stuff provided by the library's user
-        user-provided-data
-    }
+  "tonconnect": {
+    "exp": <UTC timestamp in sec>,
+    "sk": SessionSecret, // session secret key
+  },
+  "data": ... 
 }
+```
 
+where: 
+
+* `tonconnect.exp` — expiration timestamp (UTC, in seconds).
+* `tonconnect.sk` — session secret key,
+* `data` — application-specific data that the server wishes to remember during the authentication session.
+
+Example of the API (draft):
+
+```js
+tonconnect.createRequest(..., sessionData: {...})
+```
 
 
 
