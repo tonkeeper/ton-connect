@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@tonapps/tonlogin-server": "../tonlogin-server",
+    "@tonapps/tonconnect-server": "../tonconnect-server",
     "cors": "^2.8.5",
     "create-hmac": "^1.1.7",
     "express": "^4.17.3",

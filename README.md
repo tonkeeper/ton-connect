@@ -13,31 +13,43 @@ cd server-example
 yarn install
 yarn start
 ```
-## Install TonLoginServer
+## Install Ton Connect Server
+
 ```
-yarn add @tonapps/tonlogin-server
+$ yarn add @tonapps/tonconnect-server
 ```
+
+## Generate Static Secret
+
+```
+$ npx tonconnect-generate-secret
+```
+Put generated static secret to env vars or config
+
+
 ## How to use the server API
 
 ```js
-// Generate static secret with generateServerSecret();
-// and put static secret to env vars or config
-import { generateServerSecret } from '@tonapps/tonlogin-server';
-console.log(generateServerSecret());
+import { TonConnectServer, AuthRequestTypes } from '@tonapps/tonconnect-server';
 
-
-// Create a TonLogin object configured with a static secret.
-const tonlogin = new TonLoginServer({ staticSecret: "%fsa$tgs..." });
+// Create a TonConnectServer instance configured with a static secret.
+const tonconnect = new TonConnectServer({ 
+    staticSecret: process.env.TONCONNECT_SECRET 
+});
 
 // When we need to authenticate the user, create an authentication request:
-const request = tonlogin.generateAuthRequest({
-    image_url: '<logo-url>',
-    return_url: '<endpoint-url>',
+const request = tonconnect.createRequest({
+    image_url: 'https://ddejfvww7sqtk.cloudfront.net/images/landing/ton-nft-tegro-dog/avatar/image_d0315e1461.jpg',
+    callback_url: `${hostname}/tonconnect`,
     items: [{
-        type: 'ton-address', 
-        require: true
+        type: AuthRequestTypes.ADDRESS,
+        required: true
+    }, {
+        type: AuthRequestTypes.OWNERSHIP,
+        required: true
     }],
-})
+});
+
 
 res.send(request);
  
@@ -50,9 +62,31 @@ const deeplinkURL = `https://app.tonkeeper.com/ton-login/${requestURL}`;
 Decode Auth Response
 
 ```js
-const decodedResponse = tonlogin.decodeAuthResponse(encodedResponse);
+try {
+    const response = tonconnect.decodeResponse(req.query.tonlogin);
+    
+    console.log('response', response);
+    
+    for (let payload of response.payload) {
+        switch (payload.type) {
+            case AuthRequestTypes.OWNERSHIP: 
+                const isVerified = await tonconnect.verifyTonOwnership(payload, response.client_id);
 
-console.log(decodedResponse.client_id, decodedResponse.payload);
+                if (isVerified) {
+                    console.log(`ton-ownership is verified for ${payload.address}`);
+                } else {
+                    console.log(`ton-ownership is NOT verified`);
+                }
+
+                break;
+            case AuthRequestTypes.ADDRESS: 
+                console.log(`ton-address ${payload.address}`);
+                break;
+        }
+    }
+} catch (err) {
+    console.log(err);
+}
 ```
 
 [AuthPayload specification](TonConnectSpecification.md#auth-payload)

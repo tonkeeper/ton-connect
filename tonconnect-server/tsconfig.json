@@ -4,7 +4,7 @@
     "target": "ESNext",
     "lib": ["es2017", "esnext.asynciterable"],
     "typeRoots": ["node_modules/@types"],
-    "skipLibCheck": false,
+    "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,

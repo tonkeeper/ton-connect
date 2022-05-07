@@ -2,7 +2,7 @@ import { engine } from 'express-handlebars';
 import express from 'express';
 import path from 'path';
 import cors from 'cors';
-import { TonLoginServer } from '@tonapps/tonlogin-server';
+import { TonConnectServer, AuthRequestTypes } from '@tonapps/tonconnect-server';
 import { getLocalIPAddress } from './utils';
 
 // use generateServerSecret();
@@ -19,29 +19,50 @@ function init() {
   app.set("view engine", "handlebars");
   app.set("views", path.resolve(__dirname, "./views"));
 
-  const tonlogin = new TonLoginServer({ staticSecret });
+  const tonconnect = new TonConnectServer({ staticSecret });
 
   app.get('/authRequest', (req, res) => {
-    const request = tonlogin.generateAuthRequest({
+    const request = tonconnect.createRequest({
       image_url: 'https://ddejfvww7sqtk.cloudfront.net/images/landing/ton-nft-tegro-dog/avatar/image_d0315e1461.jpg',
-      return_url: `${hostname}/tonlogin`,
+      return_url: `${hostname}/tonconnect`,
       items: [{
-        type: 'ton-address',
-        require: true
+        type: AuthRequestTypes.ADDRESS,
+        required: true
+      }, {
+        type: AuthRequestTypes.OWNERSHIP,
+        required: true
       }],
+    }, {
+      customField: 'some data...'
     });
 
     res.send(request);
   });
 
-  app.get('/tonlogin', (req, res) => {
+  app.get('/tonconnect', async (req, res) => {
     try {
       const encodedResponse = req.query.tonlogin as string;
-      const decodedResponse = tonlogin.decodeAuthResponse(encodedResponse);
+      const response = tonconnect.decodeResponse(encodedResponse);
 
-      console.log(decodedResponse.client_id, decodedResponse.payload);
+      const print: any = { response };
 
-      res.send(decodedResponse);
+      for (let payload of response.payload) {
+        switch (payload.type) {
+          case AuthRequestTypes.OWNERSHIP: 
+            const isVerified = await tonconnect.verifyTonOwnership(payload, response.client_id);
+
+            print.message = isVerified 
+              ? `ton-ownership is verified for ${payload.address}`
+              : `ton-ownership is NOT verified`
+
+            break;
+          case AuthRequestTypes.ADDRESS: 
+            print.message = `ton-address ${payload.address}`
+            break;
+        }
+      }
+
+      res.send(print);
     } catch (err) {
       console.log(err);
       res.status(400).send({ error: true });

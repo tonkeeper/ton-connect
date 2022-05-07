@@ -1,14 +1,17 @@
 {
-  "name": "@tonapps/tonlogin-server",
+  "name": "@tonapps/tonconnect-server",
   "license": "Apache-2.0",
   "version": "0.1.0",
   "author": "tonapps",
-  "description": "TonLogin Server",
+  "description": "TonConnect Server",
   "main": "build/index.js",
   "types": "build/index.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/tonkeeper/ton-login"
+  },
+  "bin": {
+    "tonconnect-generate-sk": "./generateServerSk.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -17,6 +20,7 @@
   },
   "dependencies": {
     "create-hmac": "^1.1.7",
+    "tonweb": "^0.0.38",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1"
   },
