@@ -36,19 +36,22 @@ export class TonConnectServerV1 {
     const TonWallet = TonWeb.Wallets.all[payload.wallet_version];
     if (TonWallet) {
       // Construct wallet contract 
+      const publicKey = Base64.decodeBytes(payload.pubkey)
       const wc = new TonWeb.Address(payload.address).wc;
-      const wallet = new TonWallet({}, { publicKey: payload.pubkey, wc });
-      const contractAddress = await wallet.getAddress().toString(true, true, true);
-      const isAddressMatched = contractAddress === payload.address;
+      const wallet = new TonWallet({}, { publicKey, wc });
+      const contractAddress = await wallet.getAddress();
+      const friendlyAddress = contractAddress.toString(true, true, true);
+      const isAddressMatched = friendlyAddress === payload.address;
 
       // Verify the signature
-      const message = `tonlogin/ownership/${payload.wallet_id}/${payload.address}/${client_id}`;
+      const message = `tonlogin/ownership/${payload.wallet_version}/${payload.address}/${client_id}`;
+      const signature = Base64.decodeBytes(payload.signature);
       const isSignatureVerified = nacl.sign.detached.verify(
         stringToBytes(message), 
-        stringToBytes(payload.signature), 
-        stringToBytes(payload.pubkey)
+        signature, 
+        publicKey
       );
-
+  
       if (isAddressMatched && isSignatureVerified) {
         return true;
       }
@@ -118,7 +121,7 @@ export class TonConnectServerV1 {
     }
 
     return { 
-      sk: payload.tonconnect.sk,  
+      sk: Base64.decodeBytes(payload.tonconnect.sk),  
       data: payload.data
     };
   }

@@ -6,7 +6,7 @@ export function stringToBytes(str: string) {
 }
 
 export function bytesToString(bytes: Uint8Array) {
-  return naclUtils.encodeBase64(bytes);
+  return naclUtils.encodeUTF8(bytes);
 }
 
 export function getTimeSec() {
