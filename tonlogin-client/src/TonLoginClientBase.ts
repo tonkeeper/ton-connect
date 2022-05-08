@@ -1,5 +1,5 @@
-import { AuthRequest, AuthRequestBody, AuthRequestPayload, AuthResponsePayload, CreateResponseOptions, CreateTonOwnershipSignatureOptions, PayloadExtractorNames, PayloadExtractors, PayloadExtractorsOptions } from "./TonLoginClient.types";
-import { TonLoginClientError } from "./TonLoginClientError";
+import { AuthRequest, AuthRequestBody, AuthResponsePayload, CreateResponseOptions, CreateTonOwnershipSignatureOptions, PayloadExtractorNames, СonstructPayloadOptions } from "./TonLoginClient.types";
+import { TonConnectError } from "./TonConnectError";
 
 export abstract class TonLoginClientBase {
   public abstract version: string;
@@ -15,7 +15,7 @@ export abstract class TonLoginClientBase {
 
   public getResponse() {
     if (!this.response) {
-      throw new TonLoginClientError('Response not created yet')
+      throw new TonConnectError('Response not created yet')
     }
 
     return this.response
@@ -25,20 +25,16 @@ export abstract class TonLoginClientBase {
     return this.request[this.version];
   }
 
-  protected async extractPayload(
-    request: AuthRequestPayload[], 
-    extractors: PayloadExtractors,
-    extractorOptions: PayloadExtractorsOptions
-  ) {
+  protected async constructPayload(options: СonstructPayloadOptions) {
+    const { request, extractors, extractorOptions } = options;
     const response: AuthResponsePayload[] = [];
-    for(let item of request) {
+    for (let item of request) {
       const extractorName = PayloadExtractorNames[item.type];
       const extractor = extractors[extractorName];
-
       const payload = await extractor?.(extractorOptions);
 
       if (payload) {
-        response.push(payload);
+        response.push({ type: item.type, ...payload });
       }
     }
 

@@ -1,20 +1,20 @@
 type MaybePromise<T> = T | Promise<T>;
 
-export enum AuthPayloadType {
+export enum AuthRequestTypes {
   ADDRESS = 'ton-address',
   OWNERSHIP = 'ton-ownership'
 }
 
 export type AuthRequestPayload = {
-  type: AuthPayloadType;
+  type: AuthRequestTypes;
   required: boolean;
 }
 
 export type AuthResponsePayload = {
-  type: AuthPayloadType.ADDRESS;
+  type: AuthRequestTypes.ADDRESS;
   address: string;
 } | {
-  type: AuthPayloadType.OWNERSHIP;
+  type: AuthRequestTypes.OWNERSHIP;
   pubkey: Uint8Array;
   wallet_id: number | null;
   wallet_version: string;
@@ -54,21 +54,21 @@ export type CreateResponseOptions = {
 }
 
 export type CreateTonOwnershipSignatureOptions = {
-  walletId: number; 
+  walletVersion: string; 
   address: string;
   clientId: string;
   secretKey: Uint8Array;
 }
 
-export type PayloadExtractorsOptions = {
+export type PayloadExtractorOptions = {
   clientId: string;
 }
 
 export type PayloadExtractors = {
-  tonAddress?: (opts: PayloadExtractorsOptions) => MaybePromise<{
+  tonAddress?: (opts: PayloadExtractorOptions) => MaybePromise<{
     address: string;
   }>;
-  tonOwnership?: (opts: PayloadExtractorsOptions) => MaybePromise<{
+  tonOwnership?: (opts: PayloadExtractorOptions) => MaybePromise<{
     pubkey: Uint8Array;
     wallet_id: number | null;
     wallet_version: string;
@@ -78,6 +78,12 @@ export type PayloadExtractors = {
 }
 
 export const PayloadExtractorNames = {
-  [AuthPayloadType.ADDRESS]: 'tonAddress',
-  [AuthPayloadType.OWNERSHIP]: 'tonOwnership'
-};
+  [AuthRequestTypes.ADDRESS]: 'tonAddress',
+  [AuthRequestTypes.OWNERSHIP]: 'tonOwnership'
+}
+
+export type СonstructPayloadOptions = {
+  request: AuthRequestPayload[];
+  extractors: PayloadExtractors;
+  extractorOptions: PayloadExtractorOptions;
+}
