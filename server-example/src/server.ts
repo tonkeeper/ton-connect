@@ -63,9 +63,9 @@ function init() {
       }
 
       res.send(print);
-    } catch (err) {
-      console.log(err);
-      res.status(400).send({ error: true });
+    } catch (error) {
+      console.log(error);
+      res.status(400).send({ error });
     }
   });
 
