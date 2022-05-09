@@ -31,18 +31,30 @@ try {
   // If a validation error occurs, constructor throw exception.
   const tonlogin = new TonLoginClient(request);
 
-  const extractPayload = (type: AuthPayloadType) => {
-    if (type === AuthPayloadType.ADDRESS) {
-      return { address: '...' };
-    }
-  }
-
   // @return {string} LXgeNOLpvLFtgjeyY=...
   const response = tonlogin.createResponse({
-    extractPayload,
-    serviceName: '...',
-    walletSeed: '...',
-    realm: 'web', 
+    service: '...',
+    seed: '...',
+    realm: 'web',
+    payload: {
+      tonAddress: () => ({ address }),
+      tonOwnership: ({ clientId }) => {        
+        const signature = tonlogin.createTonOwnershipSignature({
+          secretKey: privateKey,
+          walletId: 12345,
+          address: '...',
+          clientId
+        })
+
+        return {
+          wallet_version: 'v3R4',
+          wallet_id: 12345,
+          pubkey: publicKey, 
+          address: '...',
+          signature,
+        }
+      }
+    }
   });
   
 

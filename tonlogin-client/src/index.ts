@@ -1,6 +1,6 @@
-import { AuthRequest, CreateResponseArgs } from './TonLoginClient.types';
+import { AuthRequest, CreateResponseOptions, CreateTonOwnershipSignatureOptions } from './TonLoginClient.types';
 import { TonLoginClientBase } from './TonLoginClientBase';
-import { TonLoginClientError } from './TonLoginClientError';
+import { TonConnectError } from './TonConnectError';
 import { TonLoginClientV1 } from './TonLoginClientV1';
 
 const versions = {
@@ -16,17 +16,17 @@ export class TonLoginClient extends TonLoginClientBase {
 
     const availableVersions = Object.keys(versions);
     if (!scheme['protocol']) {
-      throw new TonLoginClientError('Wrong protocol')
+      throw new TonConnectError('Wrong protocol')
     }
 
     const { protocol, ...other } = scheme;
     const version = Object.keys(other)[0] ?? ''; 
     if (!availableVersions.includes(version)) {
-      throw new TonLoginClientError('Wrong protocol version');
+      throw new TonConnectError('Wrong protocol version');
     }
 
     if (!version) {
-      throw new TonLoginClientError(
+      throw new TonConnectError(
         `Wrong protocol version, available versions: ${availableVersions.join(',')}`
       );
     } 
@@ -34,10 +34,14 @@ export class TonLoginClient extends TonLoginClientBase {
     return new versions[version](scheme);
   } 
 
-  public async createResponse(options: CreateResponseArgs): Promise<string> {
-    throw new TonLoginClientError('Not implemented');
+  public async createResponse(options: CreateResponseOptions): Promise<string> {
+    throw new TonConnectError('Not implemented');
+  }
+
+  public createTonOwnershipSignature(options: CreateTonOwnershipSignatureOptions): string {
+    throw new TonConnectError('Not implemented');
   }
 }
 
 export * from './TonLoginClient.types';
-export { TonLoginClientError } from './TonLoginClientError';
+export { TonConnectError } from './TonConnectError';
