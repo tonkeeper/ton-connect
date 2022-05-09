@@ -409,10 +409,18 @@ where:
 * `tonconnect.sk` — session secret key,
 * `data` — application-specific data that the server wishes to remember during the authentication session.
 
-Example of the API (draft):
+Example of the API:
 
 ```js
-tonconnect.createRequest(..., sessionData: {...})
+ tonconnect.createRequest(
+    {
+      image_url: '...',
+      return_url: `...`,
+      items: [...],
+    }, {
+      customField: 'some data...'
+    }
+);
 ```
 
 
