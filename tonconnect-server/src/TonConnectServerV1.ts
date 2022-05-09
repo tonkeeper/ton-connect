@@ -116,7 +116,7 @@ export class TonConnectServerV1 {
       throw new Error('Invalid session payload');
     }
 
-    if (payload.tonconnect.exp > getTimeSec()) {
+    if (payload.tonconnect.exp < getTimeSec()) {
       throw new Error('Session expired');
     }
 
