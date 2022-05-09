@@ -2,6 +2,7 @@ import nacl from 'tweetnacl';
 import TonWeb from 'tonweb';
 import { CreateRequestOptions, DecodedResponse, SessionData, TonOwnershipPayload } from './TonConnectServer.types';
 import { Base64, bytesToString, getTimeSec, concatBytes, extractBytes, stringToBytes } from './utils';
+import { TonConnectError } from './TonConnectError';
 
 type TonConnectServerOptions = {
   staticSecret: string;
@@ -70,7 +71,7 @@ export class TonConnectServerV1 {
     const payloadBytes = nacl.box.open(authenticator, nonce, clientId, session.sk);
 
     if (!payloadBytes) {
-      throw new Error('Payload decoding failed');
+      throw new TonConnectError('Payload decoding failed');
     }
 
     const payload = JSON.parse(bytesToString(payloadBytes));
@@ -107,17 +108,17 @@ export class TonConnectServerV1 {
     const payloadBytes = nacl.secretbox.open(box, nonce, this.staticSk);
 
     if (!payloadBytes) {
-      throw new Error('Failed unpack session payload');
+      throw new TonConnectError('Failed unpack session payload');
     }
 
     const payload = JSON.parse(bytesToString(payloadBytes));
 
     if (!payload.tonconnect) {
-      throw new Error('Invalid session payload');
+      throw new TonConnectError('Invalid session payload');
     }
 
     if (payload.tonconnect.exp < getTimeSec()) {
-      throw new Error('Session expired');
+      throw new TonConnectError('Session expired');
     }
 
     return { 
