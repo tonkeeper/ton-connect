@@ -22,7 +22,7 @@ $ yarn add @tonapps/tonconnect-server
 ## Generate Static Secret
 
 ```
-$ npx tonconnect-generate-secret
+$ npx tonconnect-generate-sk
 ```
 Put generated static secret to env vars or config
 
