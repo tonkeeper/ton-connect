@@ -293,14 +293,27 @@ Session payload is an opaque data object that the service sends over to the clie
 Payload inside the [authenticator](#session-authenticator) contains the shared data items and is encoded in JSON.
 Any item may be missing if the user chose not to share it or it is not supported by the client.
 
+Push notification API is an optional info. App may use it to send further TON Connect requests directly to the wallet, or tx signing requests per [wallet-api](https://github.com/tonkeeper/wallet-api).
+
 ```
 {
     "items": [
         {
             "type": "ton-address",
-            "value": "EQrt...s7Ui",
-        }
-    ]
+            "address": "EQrt...s7Ui",
+        },
+        {
+            "type": "ton-ownership",
+            "address": "EQrt...s7Ui",
+            ...
+        },
+    ],
+    "push": {
+        "url": "https://tonapi.example.com/...",
+        "headers": {
+            "X-Push-ID": "f8a90d7edad893",
+        },
+    }
 }
 ```
 
