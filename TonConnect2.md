@@ -10,11 +10,19 @@
 
 TON blockchain enables creation of trust-minimized applications and services.
 
-TON apps may control various assets (coins, tokens, NFTs etc.) according to the publicly auditable and immutable logic performed by the blockchain. This way users do not have to place trust in closed private systems to not censor or steal their money.
+TON apps control various assets (coins, tokens, NFTs etc.) according to the publicly auditable and immutable logic performed by the blockchain. This way users do not have to place trust in closed private systems to not censor or steal their money.
 
 Access to TON apps is controlled by the wallets: regular applications that keep users’ cryptographic keys on their devices. Wallets enable users to sign into applications and authorize blockchain transactions.
 
-The goal of Ton Connect is to enable smooth and safe interaction between wallets, services and apps.
+The goal of Ton Connect is to enable smooth and safe interaction between _wallets_, _services_ and _apps_.
+
+### Features of Ton Connect
+
+**Transaction authorization**: apps and services use Ton Connect to request transaction signature from the user’s wallet. Ton Connect offers convenient and secure protocol to approve transaction in one click.
+
+**Sign-in without passwords**: users may register and sign into a service with just their TON wallet without having to create and memorize additional passwords.
+
+**Apps identification**: Ton Connect uses TON DNS to securely identify apps and services to the users without relying on centralized 3rd parties.
 
 
 ### Apps vs services
@@ -27,29 +35,19 @@ In this specification we use the following terminology:
 
 For TON Connect the distinction lies in the fact that service has its own offchain identity and may request [identification of the user](#user-identification). Apps run on behalf of the user, so identifying the user does not make much sense, while app’s own identity is defined by its smart contract address.
 
-
 ### Decentralized vs centralized apps
 
 In the above definitions apps are considered decentralized and services considered centralized. 
 In reality, there is a spectrum of trust-minimization and each specific app or service may rely on some centralized infrastructure.
 
-Both apps and services are often non-custodial for the security and legal reasons. Instead of managing cryptographic keys that hold users’ funds they rely on wallet apps to approve and sign transactions on behalf of the users. Wallet apps themselves are often non-custodial too: they store secret keys securely on their users’ devices and never communicate them to other computers on the network.
-
-
-### User identification
-
-To minimize cross-service tracking, TON Connect uses distinct cryptographic identities for each service.
-
-User identity is tied to the [app keypair](#app-keypair).
+Both apps and services are often non-custodial for the security reasons. Instead of managing cryptographic keys that hold users’ funds they rely on wallet apps to approve and sign transactions on behalf of the users. Wallet apps themselves are often non-custodial too: they store secret keys securely on their users’ devices and never communicate them to other computers on the network.
 
 
 ### User authentication
 
-Decentralized apps authenticate users within smart contracts using message sender addresses. 
-The UI (“offchain logic”) runs on behalf of the user, so there is no need for a dedicated “sign in” scheme.
+Decentralized apps (dapps) authenticate users within smart contracts using origin wallet address (also known as `sender`). Centralized services run on the servers, may store user’s data and rely on “sign in” functionality of Ton Connect to authenticate the user with a cryptographic key derived from the wallet secret seed. 
 
-Centralized apps run on the servers and may store user data. They may use “sign in” functionality to authenticate the user, where instead of username/password pair we use cryptographic keypair derived from the wallet secret seed.
-
+Both apps and services have a similar UX of “Connect Wallet” flow to establish a communication channel between the app and the wallet for sending transaction signing requests.
 
 ### App authentication
 
@@ -58,10 +56,7 @@ Apps are authenticated using [TON DNS](https://ton.org/docs/#/web3/dns) protocol
 Decentralized apps may use `sha256("wallet")` key for the smart contract address. 
 When the wallet receives request to sign a message to a smart contract with a given **.ton** name, a valid and up-to-date DNS record would be used to authenticate that contract address with that name.
 
-**TODO:** callback/return URLs should also be specified in the TON DNS to permit their verification for dapps that cannot sign their own requests.
-
 Centralized services may also use `sha256("tonconnect.app-pk")` key to specify 32-byte [app public key](#app-keypair) used to initiate authentication requests to the wallet. The key should be stored on the online server and can be frequently rotated via TON.DNS record update.
-
 
 
 ## Workflows
@@ -86,7 +81,6 @@ This is for “offchain” operations: where the wallet responds with authorizat
 5. Wallet sends/redirects the user back to the app with the reply.
 6. Service performs the requested action (updates its database, makes blockchain transactions of its own etc.).
 
-
 ### Transaction authorization
 
 This is for the “onchain” operations: transactions signed by the wallet and sent by the user directly from their wallet.
@@ -102,14 +96,33 @@ This is for the “onchain” operations: transactions signed by the wallet and 
 
 ## Compatibility
 
-TON Connect 2.0 is quite similar to the original 1.0 and should be easy to adopt by the apps and services.
+Workflow of TON Connect 2.0 is similar to the original 1.0 and should be easy to adopt by the apps and services.
 
 To keep compatibility with Connect 1.0 the [ConnectRequest](#ConnectRequest) can be merged together with the request object from 1.0: the wallet will see both keys `v1` and `v2`: the older wallet will follow up with v1 version, the newer wallets will use v2.
 
 In the future v1 could be completely phased out as users update to newer versions of their wallets.
 
 
-## Definitions
+## API
+
+### URL formats
+
+
+`ton-connect://`
+`https://<wallet-url>/ton-connect/<base64url(Request)>`
+`https://<wallet-url>/ton-connect-url/<url>`
+
+
+
+## Protocol specification
+
+### Cryptographic primitives
+
+We use conservative and widely available cryptographic primitives: NaCl for signatures and encryption (Curve25519, Salsa20+Poly130), SHA2-256 and SHA2-512 for key drivation.
+
+### Serialization format
+
+For serialization we use TL-B serialization format. TL-B is expressive, extensible, already used by TON apps and offers necessary precision for cryptographic uses.
 
 ### App
 
@@ -361,7 +374,6 @@ Validation rules:
 
 
 
-
 ### AuthRequest
 
 AuthRequest is suitable for centralized services to confirm offchain actions via the wallet.
@@ -530,4 +542,5 @@ Response body contains the bag-of-cells serialization of the signed message.
     "tx-boc": Base64(Tx-BoC)
 }
 ```
+
 
