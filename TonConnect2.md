@@ -3,18 +3,28 @@
 * [Overview](#Overview)
 * [Workflows](#Workflows)
 * [Compatibility](#Compatibility)
+* [API](#API)
+* [Protocol specification](#Protocol-specification)
 * [Definitions](#Definitions)
-* [Requests and Responses](#Requests-and-Responses)
 
 ## Overview
 
 TON blockchain enables creation of trust-minimized applications and services.
 
-TON apps may control various assets (coins, tokens, NFTs etc.) according to the publicly auditable and immutable logic performed by the blockchain. This way users do not have to place trust in closed private systems to not censor or steal their money.
+TON apps control various assets (coins, tokens, NFTs etc.) according to the publicly auditable and immutable logic performed by the blockchain. This way users do not have to place trust in closed private systems to not censor or steal their money.
 
 Access to TON apps is controlled by the wallets: regular applications that keep users’ cryptographic keys on their devices. Wallets enable users to sign into applications and authorize blockchain transactions.
 
-The goal of Ton Connect is to enable smooth and safe interaction between wallets, services and apps.
+The goal of Ton Connect is to enable smooth and safe interaction between _wallets_, _services_ and _apps_.
+
+
+### Features of Ton Connect
+
+**Transaction authorization**: apps and services use Ton Connect to request transaction signature from the user’s wallet. Ton Connect offers convenient and secure protocol to approve transaction in one click.
+
+**Sign-in without passwords**: users may register and sign into a service with just their TON wallet without having to create and memorize additional passwords.
+
+**Apps identification**: Ton Connect uses TON DNS to securely identify apps and services to the users without relying on centralized 3rd parties.
 
 
 ### Apps vs services
@@ -33,23 +43,14 @@ For TON Connect the distinction lies in the fact that service has its own offcha
 In the above definitions apps are considered decentralized and services considered centralized. 
 In reality, there is a spectrum of trust-minimization and each specific app or service may rely on some centralized infrastructure.
 
-Both apps and services are often non-custodial for the security and legal reasons. Instead of managing cryptographic keys that hold users’ funds they rely on wallet apps to approve and sign transactions on behalf of the users. Wallet apps themselves are often non-custodial too: they store secret keys securely on their users’ devices and never communicate them to other computers on the network.
-
-
-### User identification
-
-To minimize cross-service tracking, TON Connect uses distinct cryptographic identities for each service.
-
-User identity is tied to the [app keypair](#app-keypair).
+Both apps and services are often non-custodial for the security reasons. Instead of managing cryptographic keys that hold users’ funds they rely on wallet apps to approve and sign transactions on behalf of the users. Wallet apps themselves are often non-custodial too: they store secret keys securely on their users’ devices and never communicate them to other computers on the network.
 
 
 ### User authentication
 
-Decentralized apps authenticate users within smart contracts using message sender addresses. 
-The UI (“offchain logic”) runs on behalf of the user, so there is no need for a dedicated “sign in” scheme.
+Decentralized apps (dapps) authenticate users within smart contracts using origin wallet address (also known as `sender`). Centralized services run on the servers, may store user’s data and rely on “sign in” functionality of Ton Connect to authenticate the user with a cryptographic key derived from the wallet secret seed. 
 
-Centralized apps run on the servers and may store user data. They may use “sign in” functionality to authenticate the user, where instead of username/password pair we use cryptographic keypair derived from the wallet secret seed.
-
+Both apps and services have a similar UX of “Connect Wallet” flow to establish a communication channel between the app and the wallet for sending transaction signing requests.
 
 ### App authentication
 
@@ -58,21 +59,26 @@ Apps are authenticated using [TON DNS](https://ton.org/docs/#/web3/dns) protocol
 Decentralized apps may use `sha256("wallet")` key for the smart contract address. 
 When the wallet receives request to sign a message to a smart contract with a given **.ton** name, a valid and up-to-date DNS record would be used to authenticate that contract address with that name.
 
-**TODO:** callback/return URLs should also be specified in the TON DNS to permit their verification for dapps that cannot sign their own requests.
-
 Centralized services may also use `sha256("tonconnect.app-pk")` key to specify 32-byte [app public key](#app-keypair) used to initiate authentication requests to the wallet. The key should be stored on the online server and can be frequently rotated via TON.DNS record update.
 
+
+### Serverless apps
+
+Maintaining a backend server for apps naturally introduces a point of failure: servers may shut down or provide maliciously modified application code. If the app developer chooses to not run their own backend to receive authentication responses from the wallet (or subscribe to a third party service), they have the following options:
+
+1. **Receive data over a universal link:** after confirmation in the wallet, the user is redirected back to the app with the response transferred over the link.
+2. **Embed web-based dapp into the wallet:** when user connects the wallet, it is loaded into the app. Then the communication goes over JS bridge in the webview.
 
 
 ## Workflows
 
 ### Connect workflow
 
-1. [App](#app) or [service](#service) prepares [ConnectRequest](#ConnectRequest) and displays a QR code and a button to let the [wallet](#wallet) connect.
+1. [App](#app) or [service](#service) prepares [ConnectRequest](#Connect-Request) and displays a QR code and a button to let the [wallet](#wallet) connect.
 2. User scans the QR or clicks the button.
 3. Wallet shows confirmation dialog that shows the wallet address communicated to the app.
 4. Wallet stores app’s web address (if provided) in the list of connected services.
-5. Wallet sends/redirects the user back to the app with the reply: [ConnectResponse](#ConnectResponse) containing its address and optional push URL.
+5. Wallet sends/redirects the user back to the app with the reply: [ConnectResponse](#Connect-Response) containing its address and optional push URL.
 6. App initializes its UI using the provided address.
 
 ### Service authorization
@@ -85,7 +91,6 @@ This is for “offchain” operations: where the wallet responds with authorizat
 4. User confirms.
 5. Wallet sends/redirects the user back to the app with the reply.
 6. Service performs the requested action (updates its database, makes blockchain transactions of its own etc.).
-
 
 ### Transaction authorization
 
@@ -102,14 +107,134 @@ This is for the “onchain” operations: transactions signed by the wallet and 
 
 ## Compatibility
 
-TON Connect 2.0 is quite similar to the original 1.0 and should be easy to adopt by the apps and services.
+Workflow of TON Connect 2.0 is similar to the original 1.0 and should be easy to adopt by the apps and services.
 
-To keep compatibility with Connect 1.0 the [ConnectRequest](#ConnectRequest) can be merged together with the request object from 1.0: the wallet will see both keys `v1` and `v2`: the older wallet will follow up with v1 version, the newer wallets will use v2.
+To keep compatibility with Connect 1.0 the [Connect Request](#Connect-Request) can be merged together with the request object from 1.0: the wallet will see both keys `v1` and `v2`: the older wallet will follow up with v1 version, the newer wallets will use v2.
+
+```
+{
+    "protocol": "ton-auth",
+    "v2": Base64(ConnectRequest)
+}
+```
 
 In the future v1 could be completely phased out as users update to newer versions of their wallets.
 
 
-## Definitions
+## API
+
+### SDK and bridge for apps
+
+App and service developers use two related APIs:
+
+1. The SDK to generate requests, serve them over links or QR codes, and handle responses.
+2. The JS bridge to communicate with the wallet in-browser or within an app widget.
+
+
+```
+TBD.
+```
+
+
+### URL formats
+
+To communicate Ton Connect requests from an app to a wallet with a QR code or a links use the following format:
+
+#### 1. Direct links
+
+This is the default option that contains the request within the URL. User's OS decides which app to use to handle the link.
+
+For [Connect Request](#Connect-Request):
+
+`ton-connect://conn/<base64url(ConnectRequest)>`
+
+For [Auth Request](#Auth-Request):
+
+`ton-connect://auth/<base64url(AuthRequest)>`
+
+For [Transaction Request](#Transaction-Request):
+
+`ton-connect://tx/<base64url(TxRequest)>`
+
+
+### 2. HTTP requests
+
+Services may serve the request over HTTP with the following MIME type and encoding:
+
+Connect Request:
+
+```
+Content-Type: application/ton-connect-request
+Content-Transfer-Encoding: binary
+```
+
+Callbacks return the response with `Content-Type: application/ton-connect-response`.
+
+Auth Request:
+
+```
+Content-Type: application/ton-auth-request
+Content-Transfer-Encoding: binary
+```
+
+Callbacks return the response with `Content-Type: application/ton-auth-response`.
+
+Tx Request:
+
+```
+Content-Type: application/ton-tx-request
+Content-Transfer-Encoding: binary
+```
+
+Callbacks return the response with `Content-Type: application/ton-tx-response`.
+
+
+#### 3. Universal links
+
+To let specific wallet handle the request one can use the universal link with the following format:
+
+Connect Request: 
+
+```
+https://<wallet-url>/ton-connect/conn/<base64url(ConnectRequest)>
+```
+
+Auth Request: 
+
+```
+https://<wallet-url>/ton-connect/auth/<base64url(AuthRequest)>
+```
+
+Tx Request: 
+
+```
+https://<wallet-url>/ton-connect/tx/<base64url(TxRequest)>
+```
+
+Example: `http://app.mywallet.com/ton-connect/conn/...`.
+
+#### 4. Universal link with HTTP request
+
+To make the wallet open HTTP request (see (2) above) use the following link:
+
+`https://<wallet-url>/ton-connect-url?r=<url>`
+
+Example: `http://app.mywallet.com/ton-connect-url?r=https://myservice.com/ton/...`.
+
+
+
+## Protocol specification
+
+This is low-level protocol specification intended for implementors of SDKs. Authors of apps would typically use SDK API and not worry about the cryptography, binary layouts and validation rules: those are handled within the SDK.
+
+
+### Cryptographic primitives
+
+We use conservative and widely available cryptographic primitives: NaCl for signatures and encryption (Curve25519, Salsa20+Poly130), SHA2-256 and SHA2-512 for key drivation.
+
+### Serialization format
+
+For serialization we use [TL-B format](https://ton.org/docs/#/overviews/TL-B). TL-B is expressive, extensible, already used by TON apps and offers necessary precision for cryptographic uses.
 
 ### App
 
@@ -150,7 +275,9 @@ See [tonweb-mnemonic](https://github.com/toncenter/tonweb-mnemonic) for definiti
 
 ### Root Connect Key
 
-256-bit secret key used for authentication purposes. This key may be stored separately from the [Wallet Seed](#wallet-seed) with more convenient protection mode.
+256-bit secret key used for offchain authentication purposes (that is, signing responses to a service instead of signing a transaction). 
+
+This key may be stored separately from the [Wallet Seed](#wallet-seed) with a more convenient protection mode.
 
 ```
 RootConnectKey = HMAC-SHA256(key: "TonConnect.Root", data: WalletSeed)
@@ -179,91 +306,97 @@ Then, the public and private 32-byte keys are generated using Crypto Box API in 
 The public key part of the [Client Keypair](#client-keypair) used as a stable identifier of the client.
 
 
+### Text and URL encoding
+
+TL-B cells fit 127 bytes of contiguous data that is often not sufficient for URLs due to callback parameters, tracking cookies and deployment oddities.
+
+To make sure we can fit arbitrary long textual data (mostly URLs) we use the same chunked text format as in TON.DNS.
+
+```
+chunk_ref$_ {n:#} ref:^(TextChunks (n + 1)) = TextChunkRef (n + 1);
+chunk_ref_empty$_ = TextChunkRef 0;
+text_chunk$_ {n:#} len:(## 8) data:(bits (len * 8)) next:(TextChunkRef n) = TextChunks (n + 1);
+text_chunk_empty$_ = TextChunks 0;
+text$_ chunks:(## 8) rest:(TextChunks chunks) = Text;
+
+_ url: Text = URL;
+```
 
 
-## Requests and Responses
+### Connect Request
 
-* [ConnectRequest](#ConnectRequest)
-* [ConnectResponse](#ConnectResponse)
-* [AuthRequest](#AuthRequest)
-* [AuthResponse](#AuthResponse)
-* [TxRequest](#TxRequest)
-* [TxResponse ](#TxResponse)
+```
+connect_request_pubkey#_ pk:bits256 = PublicKey
+
+connect_request_dns#_ name:^Cell = DomainName
+
+connect_request_v2#74637632  // ascii "tcv2"
+    signature: bits512,
+    signer:    (Either PublicKey DomainName)
+    body:      ^ConnectRequestBody
+    = ConnectRequest
+```
+
+Represents a request for connection between a wallet and the app.
+
+`signature`: Ed25519 signature via NaCl `crypto_sign.detached` method.
+
+`signer`: either a TON.DNS name (recommended), or a raw public key (that could be whitelisted in the wallet by the user or the wallet owner). If the TON.DNS name is provided, then the public key for signature verification is read from the DNS record using the key `sha256("tonconnect.app-pk")`.
+
+Serverless dapps are not concerned with replay attacks and may sign the request once and reuse it in order to let users connect the apps into the wallet.
+
+```
+app_info#_ 
+    app_url:   (Maybe ^URL)
+    about_url: (Maybe ^URL)
+    = AppInfo;
+
+request_item_address#61646472 = RequestItem;
+    
+connect_request_body_v2#_
+    expiration:    uint64        // UNIX timestamp in sec
+    items:         ^(HashmapE 32 RequestItem)
+    info:          ^AppInfo
+    reply_options: ^ReplyOptions
+    = ConnectRequestBody;
+
+```
+
+`AppInfo.app_url` is an optional URL of the app that could be opened within the wallet as a widget.
+
+`AppInfo.about_url`: is an optional URL that leads to the documentation or landing page of the app/service.
+
+Note: the image data or URL is provided within the DNS per the [TON Token data standard](https://github.com/ton-blockchain/TIPs/issues/64). Maybe the app/about links should be sent from there.
+
+`ConnectRequestBody.items` contains a hashmap of requested items (indexes are ignored).
+
+`ConnectRequestBody.reply_options`: see [Reply Options](#Reply-Options).
+
+Unknown items should be ignored by the wallet for backwards compatibility. Newer versions may introduce different types and provide old ones for compatibility; in such case the wallet will ignore the older one and reply with the newer item instead.
 
 
 ### Reply Options
 
-App or service may receive replies in various forms. To tell the wallet how the reply should be delivered use one or several options:
-
-* `reply.payload`: (optional) arbitrary data that **must** be returned by the client back to the service.
-* `reply.return`: (optional) URL that user opens on their device after successful connect. This will include the [ConnectResponse](#ConnectResponse) in a query string under the key `tonconnect`.
-* `reply.serverless` (optional): boolean value indicating that `tonconnect` parameter must be provided as a URL anchor (via `#`). Example: `https://example.com/...#tonconnect=`. 
-* `reply.callback` (optional): URL that user opens on their device after successful login. [ConnectResponse](#ConnectResponse) will be included in a query string under the key `tonconnect`.
-
-
-### ConnectRequest
-
-A JSON-encoded object with the following structure for each version of the login request:
+App or service may receive replies in various forms. To tell the wallet how the reply should be delivered use one or several options.
 
 ```
-{
-    "protocol": "ton-auth",
-    "v2": {
-       "body": (base64-encoded signed ConnectRequestBody),
-       "pk": (base64-encoded public key),
-       "dns": "example.ton",
-    }
-}
+reply_options$_  
+    payload_data: (Maybe ^Cell)
+    callback_url: (Maybe ^URL)
+    return_url:   (Maybe ^URL)
+    serverless:   Bool
+    = ReplyOptions
 ```
 
-`body` is encoded through `NaCl.crypto_sign` using `pk`’s corresponding private key and JSON encoding of the [ConnectRequestBody](#ConnectRequestBody). Wallet unpacks body and checks signature using the `NaCl.crypto_sign_open` function.
-
-TON.DNS name is optional (`dns` key) and when provided MAY link to the `pk` public key in its record `sha256("tonconnect.app-pk")`.
-
-Standalone apps may provide this name, but would generate public key randomly. In such case the wallet will test that the `reply` structure links to the URLs blessed by the domain name.
-
-If `dns` is not provided, the app is considered unknown.
-
-### ConnectRequestBody
-
-A JSON-encoded object with the following layout:
-
-```
-{
-    "type": "v2-connect-req",
-    "info": {...},
-    "items": [...],
-    "reply": {...},
-}
-```
-
-Fields:
-
-`info`: struct `{dns:..., app:..., about:...}` where:
-* `info.dns`: TON.DNS name ending with `.ton`.
-* `info.app`: optional URL of the app that could be opened within the wallet as a widget;
-* `info.about`: optional URL that leads to the documentation or landing page of the app/service;
-
-Note: the image data or URL is provided within the DNS per the [TON Token data standard](https://github.com/ton-blockchain/TIPs/issues/64). Maybe the app/about links should be offered 
-
-`items`: array of requested [data items](#ConnectRequestItem) to be shared by the user.
-
-`reply`: see [Reply Options](#Reply-Options).
-
-
-### ConnectRequestItem
-
-One of the following strings:
-
-* `{"type": "ton-addr"}`: address of the TON wallet. Provided with a cryptographic proof.
-
-Unknown items should be ignored by the wallet for backwards compatibility. Newer versions may introduct different types and provide old ones for compatibility (e.g. hypothetical `ton-addr-v3`); in such case the wallet will ignore the older one and reply with the newer item instead.
+* `payload_data`: optional arbitrary data that **must** be returned by the client back to the service.
+* `callback_url`: optional URL that user opens on their device after successful login. [Connect Response](#Connect-Response) will be included in a query string under the key `tonconnect`.
+* `return_url`: optional URL that user opens on their device after successful connect. This will include the [ConnectResponse](#Connect-Response) in a query string under the key `tonconnect`.
+* `serverless`: boolean value indicating that `tonconnect` parameter must be provided as a URL anchor (via `#`). Example: `https://example.com/...#tonconnect=`. 
 
 
 
-### ConnectResponse
+### Connect Response
 
-ConnectResponse contains [response body](#ConnectResponseBody) encrypted towards [App Public Key](#app-keypair) using `NaCl.crypto_box`:
 
 ```
 nonce = random(24 bytes)
@@ -279,6 +412,7 @@ ConnectResponse layout:
     "body": Base64(ConnectResponseAuthenticator),
 }
 ```
+
 
 ### ConnectResponseBody
 
@@ -361,7 +495,6 @@ Validation rules:
 
 
 
-
 ### AuthRequest
 
 AuthRequest is suitable for centralized services to confirm offchain actions via the wallet.
@@ -427,7 +560,12 @@ AuthResponse layout:
 
 
 
-### TxRequest
+### Tx Request
+
+```
+
+
+```
 
 TxRequest is suitable for all apps and services to confirm onchain transactions.
 
@@ -530,4 +668,5 @@ Response body contains the bag-of-cells serialization of the signed message.
     "tx-boc": Base64(Tx-BoC)
 }
 ```
+
 
