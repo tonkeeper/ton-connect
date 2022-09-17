@@ -15,7 +15,7 @@ export type AuthResponsePayload = {
   address: string;
 } | {
   type: AuthRequestTypes.OWNERSHIP;
-  pubkey: Uint8Array;
+  pubkey: string;
   wallet_id: number | null;
   wallet_version: string;
   address: string;
@@ -69,7 +69,7 @@ export type PayloadExtractors = {
     address: string;
   }>;
   tonOwnership?: (opts: PayloadExtractorOptions) => MaybePromise<{
-    pubkey: Uint8Array;
+    pubkey: string;
     wallet_id: number | null;
     wallet_version: string;
     address: string;

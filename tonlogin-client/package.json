@@ -1,7 +1,7 @@
 {
   "name": "@tonapps/tonlogin-client",
   "license": "Apache-2.0",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "author": "tonapps",
   "description": "TonLogin Client",
   "main": "build/index.js",
