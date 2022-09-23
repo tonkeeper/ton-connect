@@ -53,15 +53,12 @@ export function decodeToObj(encoded: string) {
   }
 }
 
-const ENC = { '+': '-', '/': '_', '=': '.' };
-const DEC = { '-': '+', '_': '/', '.': '=' };
-
 export function toUrlSafe(str: string) {
-  return str.replace(/[+/=]/g, (m) => ENC[m])
+  return encodeURIComponent(str);
 }
 
 export function fromUrlSafe(str: string) {
-  return str.replace(/[-_.]/g, (m) => DEC[m]);
+  return decodeURIComponent(str);
 }
 
 export function encodeUrlSafeStr(str: string) {
