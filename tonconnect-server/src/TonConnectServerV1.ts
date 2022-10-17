@@ -61,6 +61,10 @@ export class TonConnectServerV1 {
     return false;
   }
 
+  public async verifyTonOwnership(payload: TonOwnershipPayload, client_id: string) {
+    return TonConnectServerV1.verifyTonOwnership(payload, client_id);
+  }
+
   public decodeResponse(base64: string): DecodedResponse {
     const response = Base64.decodeUrlSafeObj(base64);
     const authenticator = Base64.decodeBytes(response.authenticator);
