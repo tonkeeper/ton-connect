@@ -1,8 +1,12 @@
 # TON Connect v1
 
-**Important:** this is the deprecated v1 of TON Connect. Please go to [TON Connect v2](https://github.com/ton-connect) org for a newer protocol that offers a seamless bridge API and does not require the app to receive callbacks from the wallet. 
+## ⚠️ Migrate to version 2
 
-This library contains necessary functionality to implement TON Connect v1 on the client and the server.
+Please go to [TON Connect v2](https://github.com/ton-connect) for a newer protocol that offers a seamless bridge API and does not require the app to receive callbacks from the wallet. 
+
+---
+
+## Deprecated TON Connect v1 spec
 
 [📄 TON Connect v1 Specification](TonConnectSpecification.md)
 
