@@ -1,10 +1,10 @@
-# TON Connect
+# TON Connect v1
 
-**Important:** this is an alpha version intended for review and experiments. Do not use in production until the spec is finalized.
+**Important:** this is the deprecated v1 of TON Connect. Please go to [TON Connect v2](https://github.com/ton-connect) org for a newer protocol that offers a seamless bridge API and does not require the app to receive callbacks from the wallet. 
 
-This library contains necessary functionality to implement TON Connect on the client and the server.
+This library contains necessary functionality to implement TON Connect v1 on the client and the server.
 
-[📄 TON Connect Specification](TonConnectSpecification.md)
+[📄 TON Connect v1 Specification](TonConnectSpecification.md)
 
 ## How to run the demo
 
