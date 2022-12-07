@@ -33,7 +33,7 @@ export class TonConnectServerV1 {
     };
   }
 
-  public async verifyTonOwnership(payload: TonOwnershipPayload, client_id: string) {
+  public static async verifyTonOwnership(payload: TonOwnershipPayload, client_id: string) {
     const TonWallet = TonWeb.Wallets.all[payload.wallet_version];
     if (TonWallet) {
       // Construct wallet contract 
@@ -59,6 +59,10 @@ export class TonConnectServerV1 {
     }
 
     return false;
+  }
+
+  public async verifyTonOwnership(payload: TonOwnershipPayload, client_id: string) {
+    return TonConnectServerV1.verifyTonOwnership(payload, client_id);
   }
 
   public decodeResponse(base64: string): DecodedResponse {
